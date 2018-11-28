@@ -82,7 +82,7 @@ class RazorpayGateway implements PaymentGatewayInterface {
 
         if ($validator->fails()) {
             Log::error("Validation failed", $validator->failed());
-            throw new IndipayParametersMissingException;
+            throw new IndipayParametersMissingException(json_encode($validator->failed()));
         }
 
     }
