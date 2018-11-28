@@ -2,13 +2,30 @@
 <head>
     <title>Razorpay</title>
     <meta name="viewport" content="width=device-width">
+    {{-- Make the Pay button centered --}}
+    <style>
+        .razorpay-payment-button{
+            height: 20px;
+            width: 120px;
+        }
+        .razorpay-form{
+            width: 100%;
+            height: 100%; 
+            display: flex;
+            align-items: center;
+            justify-content: center;            
+        }
+    </style>
 </head>
 <body>
-    <form action="{{ $parameters['redirect_url'] }}" method="POST">
+    <form action="{{ $parameters['redirect_url'] }}" method="POST" class="razorpay-form">
+        {{-- Add all passed-in parameters as hidden variables so that they can be retrieved on response --}}
         @foreach($parameters as $param_key=>$param_value)
         <input type="hidden" name="{{ $param_key }}" value="{{ $param_value  }}" />
         @endforeach
     </form>
+    {{-- Programatically add the checkout script to handle loading completed --}}
+    {{-- So that the button can be clicked automatically on load --}}
     <script>
         var form = document.getElementsByTagName("form")[0];
         var script = document.createElement("script");
@@ -53,8 +70,6 @@
             }
         };
 
-        // Use insertBefore instead of appendChild  to circumvent an IE6 bug.
-        // This arises when a base node is used (#2709 and #4378).
         form.insertBefore( script, form.firstChild );
 
     </script>
