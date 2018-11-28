@@ -3,7 +3,7 @@
     <title>IndiPay</title>
 </head>
 <body>
-    <form action="{{ $parameters[redirect_url] }}" method="POST">
+    <form action="{{ $parameters['redirect_url'] }}" method="POST">
         <script
             src="https://checkout.razorpay.com/v1/checkout.js"
             data-key="{{ $keyId }}"
