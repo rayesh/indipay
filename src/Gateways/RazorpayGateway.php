@@ -45,8 +45,10 @@ class RazorpayGateway implements PaymentGatewayInterface {
     {
 
         Log::info('Indipay Payment Request Initiated: ');
+        $amount = ((float)$this->parameters['amount']) * 100;
         return View::make('indipay::razorpay')
                              ->with('keyId',$this->keyId)
+                             ->with('amount', $amount)
                              ->with('parameters',$this->parameters);
 
     }
@@ -59,12 +61,7 @@ class RazorpayGateway implements PaymentGatewayInterface {
      */
     public function response($request)
     {
-        $encResponse = $request->encResp;
-
-        $rcvdString = $this->decrypt($encResponse,$this->workingKey);
-        parse_str($rcvdString, $decResponse);
-
-        return $decResponse;
+        return $request;
     }
 
 
