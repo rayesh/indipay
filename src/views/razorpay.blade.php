@@ -49,13 +49,7 @@
             if ( !done && (!this.readyState ||
                     this.readyState === "loaded" || this.readyState === "complete") ) {
                 done = true;
-                console.log("Script loaded");
                 document.getElementsByClassName("razorpay-payment-button")[0].click();
-                // Handle memory leak in IE
-                script.onload = script.onreadystatechange = null;
-                if ( form && script.parentNode ) {
-                    form.removeChild( script );
-                }
             }
         };
 
