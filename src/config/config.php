@@ -71,6 +71,11 @@ return [
         'returnUrl' => env('ZAPAKPAY_RETURN_URL', 'indipay/response'),
     ],
 
+    'razorpay' =>  [
+        'keyId' => env('RAZORPAY_KEY_ID',''),
+        'keySecret' => env('RAZORPAY_KEY_SECRET', ''),
+        'returnUrl' => env('RAZORPAY_RETURN_URL', 'indipay/response'),
+    ],
     // Add your response link here. In Laravel 5.2 you may use the api middleware instead of this.
     'remove_csrf_check' => [
         'indipay/response'
