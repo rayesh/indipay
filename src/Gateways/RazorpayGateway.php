@@ -9,8 +9,6 @@ use Softon\Indipay\Exceptions\IndipayParametersMissingException;
 class RazorpayGateway implements PaymentGatewayInterface {
 
     protected $parameters = array();
-    protected $merchantData = '';
-    protected $encRequest = '';
     protected $testMode = false;
     protected $keyId = '';
     protected $keySecret = '';
@@ -35,15 +33,7 @@ class RazorpayGateway implements PaymentGatewayInterface {
     public function request($parameters)
     {
         $this->parameters = array_merge($this->parameters,$parameters);
-
         $this->checkParameters($this->parameters);
-
-        foreach($this->parameters as $key=>$value) {
-            $this->merchantData .= $key.'='.$value.'&';
-        }
-
-        $this->encRequest = $this->encrypt($this->merchantData,$this->workingKey);
-
         return $this;
 
     }
