@@ -23,6 +23,7 @@ class RazorpayGateway implements PaymentGatewayInterface {
         $this->testMode = Config::get('indipay.testMode');
         $this->parameters['key_id'] = Config::get('indipay.razorpay.keyId');
         $this->parameters['redirect_url'] = url(Config::get('indipay.razorpay.returnUrl'));
+        $this->parameters['cancel_url'] = url(Config::get('indipay.razorpay.cancelUrl'));
     }
 
     public function getEndPoint()
@@ -62,7 +63,21 @@ class RazorpayGateway implements PaymentGatewayInterface {
      */
     public function response($request)
     {
-        return $request;
+        $paymentId = $request['razorpay_payment_id'];
+        //Validate the response
+        $client = new \GuzzleHttp\Client();
+        $response = $client->post($this->getEndPoint('payments/'.$paymentId),
+                                        [
+                                            'auth' => [$this->keyId, $this->keySecret]
+                                        ])->getBody()->getContents();
+        $response = json_decode($response);
+
+        if($response->success){
+            $this->response = $response;
+            $this->response->razorpay_payment_id = $paymentId;
+        }
+        Log::info("Response is ", [$response]);
+        return $this->response;
     }
 
 

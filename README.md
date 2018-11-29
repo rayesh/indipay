@@ -71,7 +71,7 @@ Initiate Purchase Request and Redirect using any of the configured gateway:-
         
       ];
       
-      // gateway = CCAvenue / PayUMoney / EBS / Citrus / InstaMojo / ZapakPay / Mocker
+      // gateway = CCAvenue / PayUMoney / EBS / Citrus / InstaMojo / ZapakPay / Razorpay / Mocker
       
       $order = Indipay::gateway('NameOfGateway')->prepare($parameters);
       return Indipay::process($order);

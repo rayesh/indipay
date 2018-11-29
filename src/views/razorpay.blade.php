@@ -23,6 +23,7 @@
         @foreach($parameters as $param_key=>$param_value)
         <input type="hidden" name="{{ $param_key }}" value="{{ $param_value  }}" />
         @endforeach
+        <input type="button" id="cancelBtn" class="razorpay-cancel-button" value="Cancel" onclick="cancelPayment()">
     </form>
     {{-- Programatically add the checkout script to handle loading completed --}}
     {{-- So that the button can be clicked automatically on load --}}
@@ -71,7 +72,17 @@
         };
 
         form.insertBefore( script, form.firstChild );
+        {{--  Add cancel handler --}}
 
+        function cancelPayment(){
+            var form = document.getElementsByTagName("form")[0];
+            @if(!empty($parameters['cancel_url']))
+            form.action = "{{ $parameters['cancel_url'] }}";
+            form.submit();
+            @else
+            window.history.back();
+            @endif
+        }
     </script>
 </body>
 </html>
