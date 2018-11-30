@@ -4,9 +4,70 @@
     <meta name="viewport" content="width=device-width">
     {{-- Make the Pay button centered --}}
     <style>
-        .razorpay-payment-button{
-            height: 20px;
-            width: 120px;
+        body{
+            margin: 0px;
+        }
+        input[type=submit],
+        input[type="button"]{
+            height: 40px;
+            @if(!empty($parameters['theme_color'] ))
+            background: {{ $parameters['theme_color'] }};
+            border: 1px solid {{ $parameters['theme_color'] }};
+            @else
+            background: #CA4242;
+            border: 1px solid #CA4242;
+            @endif
+            box-sizing: border-box;
+            color: #fff;
+            font: 400 18px/40px 'Open Sans', sans-serif;
+            text-align: center;
+            float: left;
+            margin: 5px;
+            transition: .3s all;
+        }
+        input[type=submit]:hover,
+        input[type="button"]:hover{
+            @if(!empty($parameters['theme_color'] ))
+            color: {{ $parameters['theme_color'] }};
+            @else
+            color: #CA4242;
+            @endif
+            background: #fff;
+        }
+        #overlay{
+            background: #545454;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            visibility: hidden;
+        }
+        #loader {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            border: 2px solid #f3f3f3;
+            border-radius: 50%;
+            @if(!empty($parameters['theme_color'] ))            
+            border-top: 2px solid {{ $parameters['theme_color'] }};
+            @else
+            border-top: 2px solid #CA4242;
+            @endif
+            width: 40px;
+            height: 40px;
+            margin: -20px 0 0 -20px;
+            -webkit-animation: spin 2s linear infinite; /* Safari */
+            animation: spin 2s linear infinite;
+        }
+
+        /* Safari */
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .razorpay-form{
             width: 100%;
@@ -18,6 +79,9 @@
     </style>
 </head>
 <body>
+    <div id="overlay">
+        <div id="loader"></div> 
+    </div>
     <form action="{{ $parameters['redirect_url'] }}" method="POST" class="razorpay-form">
         {{-- Add all passed-in parameters as hidden variables so that they can be retrieved on response --}}
         @foreach($parameters as $param_key=>$param_value)
@@ -57,7 +121,7 @@
         @if(!empty($parameters['theme_color'] ))    
         script.setAttribute("data-theme.color","{{ $parameters['theme_color'] }}");
         @else
-        script.setAttribute("data-theme.color","#F37254");
+        script.setAttribute("data-theme.color","#CA4242");
         @endif
         // Handle Script loading
         var done = false;
@@ -83,7 +147,13 @@
             window.history.back();
             @endif
         }
+
+        window.addEventListener('beforeunload', function (e) {
+            document.getElementById("overlay").style.visibility = "visible";
+            // Chrome requires returnValue to be set.
+            e.returnValue = '';
+        });
+
     </script>
 </body>
 </html>
-

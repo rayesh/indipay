@@ -14,7 +14,7 @@ class RazorpayGateway implements PaymentGatewayInterface {
     protected $keySecret = '';
     protected $liveEndPoint = 'https://api.razorpay.com/v1/';
     protected $testEndPoint = 'https://api.razorpay.com/v1/';
-    public $response = '';
+    public $response = array();
 
     function __construct()
     {
@@ -45,7 +45,7 @@ class RazorpayGateway implements PaymentGatewayInterface {
     public function send()
     {
 
-        Log::info('Indipay Payment Request Initiated: ');
+        Log::debug('Indipay Payment Request Initiated: ');
         //Razorpay expects amount to be in Paisa. Convert value to Paisa.
         $amount = ((float)$this->parameters['amount']) * 100;
         return View::make('indipay::razorpay')
@@ -64,19 +64,28 @@ class RazorpayGateway implements PaymentGatewayInterface {
     public function response($request)
     {
         $paymentId = $request['razorpay_payment_id'];
-        //Validate the response
-        $client = new \GuzzleHttp\Client();
-        $response = $client->post($this->getEndPoint('payments/'.$paymentId),
-                                        [
-                                            'auth' => [$this->keyId, $this->keySecret]
-                                        ])->getBody()->getContents();
-        $response = json_decode($response);
+        if(!empty($paymentId)){
+            //Validate the response
+            $client = new \GuzzleHttp\Client();
+            try{
+                $response = $client->get($this->getEndPoint().'payments/'.$paymentId,
+                                                [
+                                                    'auth' => [$this->keyId, $this->keySecret]
+                                                ]);
 
-        if($response->success){
-            $this->response = $response;
-            $this->response->razorpay_payment_id = $paymentId;
+                if($response->getStatusCode() == 200){
+                    $response = json_decode($response->getBody()->getContents());
+                    $response->razorpay_payment_id = $paymentId;
+                    //Convert to array
+                    $response = json_decode(json_encode($response), true);
+                    $this->response = array_merge($request->all(), $response);
+                }
+            }catch(\Exception $ex){
+                Log::error("Exception",[$ex]);
+            }
+        }else{
+            $this->response = array_merge($request->all(), ["razorpay_payment_id" => "", "status"=>"error", "error_code"=>"500"]);
         }
-        Log::info("Response is ", [$response]);
         return $this->response;
     }
 
@@ -96,7 +105,7 @@ class RazorpayGateway implements PaymentGatewayInterface {
         ]);
 
         if ($validator->fails()) {
-            Log::error("Validation failed", $validator->failed());
+            Log::debug("Validation failed", $validator->failed());
             throw new IndipayParametersMissingException(json_encode($validator->failed()));
         }
 
