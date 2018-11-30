@@ -35,7 +35,7 @@
             background: #fff;
         }
         #overlay{
-            background: #545454;
+            background: #666666;
             position: absolute;
             width: 100%;
             height: 100%;
