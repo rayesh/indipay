@@ -150,8 +150,6 @@
 
         window.addEventListener('beforeunload', function (e) {
             document.getElementById("overlay").style.visibility = "visible";
-            // Chrome requires returnValue to be set.
-            e.returnValue = '';
         });
 
     </script>

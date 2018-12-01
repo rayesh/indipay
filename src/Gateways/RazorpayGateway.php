@@ -76,6 +76,7 @@ class RazorpayGateway implements PaymentGatewayInterface {
                 if($response->getStatusCode() == 200){
                     $response = json_decode($response->getBody()->getContents());
                     $response->razorpay_payment_id = $paymentId;
+                    $response->amount = ((float)$response->amount)/100;
                     //Convert to array
                     $response = json_decode(json_encode($response), true);
                     $this->response = array_merge($request->all(), $response);
