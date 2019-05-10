@@ -22,8 +22,8 @@ class RazorpayGateway implements PaymentGatewayInterface {
         $this->keySecret = Config::get('indipay.razorpay.keySecret');
         $this->testMode = Config::get('indipay.testMode');
         $this->parameters['key_id'] = Config::get('indipay.razorpay.keyId');
-        $this->parameters['redirect_url'] = url(Config::get('indipay.razorpay.returnUrl'));
-        $this->parameters['cancel_url'] = url(Config::get('indipay.razorpay.cancelUrl'));
+        $this->parameters['redirect_url'] = secure_url(Config::get('indipay.razorpay.returnUrl'));
+        $this->parameters['cancel_url'] = secure_url(Config::get('indipay.razorpay.cancelUrl'));
     }
 
     public function getEndPoint()
