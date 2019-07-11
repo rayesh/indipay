@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
 use Softon\Indipay\Exceptions\IndipayParametersMissingException;
+use Softon\Indipay\PaymentGatewayHelperInterface;
 
 class PayUMoneyGateway implements PaymentGatewayInterface {
 
@@ -17,17 +18,37 @@ class PayUMoneyGateway implements PaymentGatewayInterface {
     protected $testEndPoint = 'https://sandboxsecure.payu.in/_payment';
     public $response = '';
 
-    function __construct()
-    {
-        $this->merchantKey = Config::get('indipay.payumoney.merchantKey');
-        $this->salt = Config::get('indipay.payumoney.salt');
-        $this->testMode = Config::get('indipay.testMode');
+    protected $paymentGatewayTransLog;
 
+    function __construct(PaymentGatewayHelperInterface $paymentGatewayTransLog)
+    {
+        $this->paymentGatewayTransLog = $paymentGatewayTransLog;
+
+        $configfromenv = 	Config::get('indipay.configfromenv');
+
+        if(!$configfromenv){
+            $this->merchantKey = Config::get('PG_KEY_ID');
+            $this->salt = Config::get('PG_KEY_SECRET');
+            $this->testMode = Config::get('PG_TESTMODE');
+            $this->parameters['surl'] = secure_url(Config::get('PG_REDIRECT_URL'));
+            $this->parameters['furl'] = secure_url(Config::get("PG_CANCEL_URL"));
+
+        }else{
+            $this->merchantKey = Config::get('indipay.payumoney.merchantKey');
+            $this->salt = Config::get('indipay.payumoney.salt');
+            $this->testMode = Config::get('indipay.testMode');
+            $this->parameters['surl'] = secure_url(Config::get('indipay.payumoney.successUrl'));
+            $this->parameters['furl'] = secure_url(Config::get('indipay.payumoney.failureUrl'));
+        
+        }
+        
         $this->parameters['key'] = $this->merchantKey;
         $this->parameters['txnid'] = $this->generateTransactionID();
-        $this->parameters['surl'] = secure_url(Config::get('indipay.payumoney.successUrl'));
-        $this->parameters['furl'] = secure_url(Config::get('indipay.payumoney.failureUrl'));
+       
         $this->parameters['service_provider'] = 'payu_paisa';
+
+        
+      
     }
 
     public function getEndPoint()
@@ -54,6 +75,12 @@ class PayUMoneyGateway implements PaymentGatewayInterface {
     {
 
         Log::info('Indipay Payment Request Initiated: ');
+
+        $this->paymentGatewayTransLog->paymentGatewayTransactionLogging($this->parameters,$this->parameters["txnid"]);
+
+        Log::info("Parameters ",$this->parameters);
+        Log::info("End Point ".$this->getEndPoint());
+        
         return View::make('indipay::payumoney')->with('hash',$this->hash)
                              ->with('parameters',$this->parameters)
                              ->with('endPoint',$this->getEndPoint());
@@ -75,6 +102,18 @@ class PayUMoneyGateway implements PaymentGatewayInterface {
         if($response_hash!=$response['hash']){
             return 'Hash Mismatch Error';
         }
+
+
+        $commonStatus			=	$response['status'];
+        $transactionPaymentId   =	$response['payuMoneyId'];
+        
+        $bookingId = $this->paymentGatewayTransLog->getBookingId( $response['txnid']);
+
+        $response = array_merge($request->all(),[ "commonStatus" => $commonStatus,
+                                                        "transactionPaymentId" => $transactionPaymentId,
+                                                        "pgBookingId" => $bookingId]); 
+        
+        $this->paymentGatewayTransLog->populateRequestResponse($response);
 
         return $response;
     }

@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
 use Softon\Indipay\Exceptions\IndipayParametersMissingException;
+use Softon\Indipay\PaymentGatewayHelperInterface;
+
 
 class IcicipgGateway implements PaymentGatewayInterface {
 
@@ -17,25 +19,48 @@ class IcicipgGateway implements PaymentGatewayInterface {
     protected $testEndPoint = 'https://test.ipg-online.com/connect/gateway/processing';
     public $response = '';
 
-    function __construct()
+    protected $paymentGatewayTransLog;
+
+    function __construct(PaymentGatewayHelperInterface $paymentGatewayTransLog)
     {
-        $this->keyId = Config::get('indipay.icicipg.keyId');
-        $this->keySecret = Config::get('indipay.icicipg.keySecret');
-        $this->testMode = Config::get('indipay.testMode');
+        $this->paymentGatewayTransLog = $paymentGatewayTransLog;
+
+        $configfromenv = 	Config::get('indipay.configfromenv');
+
+        if(!$configfromenv){
+            $this->keyId = Config::get('PG_KEY_ID');
+            $this->keySecret = Config::get('PG_KEY_SECRET');
+            $this->testMode = Config::get('PG_TESTMODE');
+
+            $this->parameters['responseSuccessURL'] = secure_url(Config::get('PG_REDIRECT_URL'));
+            $this->parameters['responseFailURL'] = secure_url(Config::get("PG_CANCEL_URL"));
+
+            $this->parameters['timezone'] = Config::get('PG_TIMEZONE');;
+            $this->parameters['txntype'] = Config::get('PG_TXNTYPE');
+            $this->parameters['authenticateTransaction'] = Config::get('PG_AUTHTRAN');
+            $this->parameters['currency'] = Config::get('PG_CURRENCY');
+            $this->parameters['mode'] = Config::get('PG_MODE');
+        }else{
         
+            $this->keyId = Config::get('indipay.icicipg.keyId');
+            $this->keySecret = Config::get('indipay.icicipg.keySecret');
+            $this->testMode = Config::get('indipay.testMode');
+            
+            $this->parameters['storename'] = $this->keyId;
+            $this->parameters['sharedsecret'] = $this->keySecret;
+            $this->parameters['responseSuccessURL'] = secure_url(Config::get('indipay.icicipg.returnUrl'));
+            $this->parameters['responseFailURL'] = secure_url(Config::get('indipay.icicipg.cancelUrl'));
+           
+            $this->parameters['timezone'] = Config::get('indipay.icicipg.timezone');;
+            $this->parameters['txntype'] = Config::get('indipay.icicipg.txntype');
+            $this->parameters['authenticateTransaction'] = Config::get('indipay.icicipg.authenticateTransaction');
+            $this->parameters['currency'] = Config::get('indipay.icicipg.currency');
+            $this->parameters['mode'] = Config::get('indipay.icicipg.mode');
+        }
         $this->parameters['storename'] = $this->keyId;
         $this->parameters['sharedsecret'] = $this->keySecret;
-        $this->parameters['responseSuccessURL'] = secure_url(Config::get('indipay.icicipg.returnUrl'));
-        $this->parameters['responseFailURL'] = secure_url(Config::get('indipay.icicipg.cancelUrl'));
         $this->parameters['oid'] = $this->generateTransactionID();
         $this->parameters['txndatetime'] = $this->getDateTime() ;
-        
-        $this->parameters['timezone'] = Config::get('indipay.icicipg.timezone');;
-        $this->parameters['txntype'] = Config::get('indipay.icicipg.txntype');
-        $this->parameters['authenticateTransaction'] = Config::get('indipay.icicipg.authenticateTransaction');
-        $this->parameters['currency'] = Config::get('indipay.icicipg.currency');
-        $this->parameters['mode'] = Config::get('indipay.icicipg.mode');
-         
         
 
     }
@@ -48,6 +73,10 @@ class IcicipgGateway implements PaymentGatewayInterface {
     public function request($parameters)
     {
         $this->parameters = array_merge($this->parameters,$parameters);
+        Log::info($this->parameters);
+
+
+
         Log::info($this->parameters);
         $this->checkParameters($this->parameters);
 
@@ -64,6 +93,10 @@ class IcicipgGateway implements PaymentGatewayInterface {
     {
 
         Log::info('Indipay Payment Request Initiated: for ICICI ' . $this->hash) ;
+
+        Log::info("end Poing" .$this->getEndPoint());
+
+        $this->paymentGatewayTransLog->paymentGatewayTransactionLogging($this->parameters,$this->parameters["oid"]);
 
         return View::make('indipay::icicipg')->with('hash',$this->hash)
                              ->with('parameters',$this->parameters)
@@ -83,15 +116,55 @@ class IcicipgGateway implements PaymentGatewayInterface {
         $transactionStatus = substr($request['approval_code'],0,1) == "Y" ? "success" : "error";
         $response = $request->all();
 
+        Log::info("Response",[$response]);
         $response = json_decode(json_encode($response), true);
+        
+        if ( !empty($request['customParam_productinfo'])){
+            $pg_customParam_productinfo = $request['customParam_productinfo'];
+        }else{
+            $pg_customParam_productinfo = "";
+        }
+
+        if ( !empty($request['customParam_firstname'])){
+            $pg_customParam_firstname = $request['customParam_firstname'];
+        }else{
+            $pg_customParam_firstname = "";
+        }
+        if ( !empty($request['customParam_phone'])){
+            $pg_customParam_phone = $request['customParam_phone'];
+        }else{
+            $pg_customParam_phone = "";
+        }
+        if ( !empty($request['customParam_udf1'])){
+            $pg_customParam_udf1 = $request['customParam_udf1'];
+        }else{
+            $pg_customParam_udf1 = "";
+        }
+        if ( !empty($request['customParam_udf2'])){
+            $pg_customParam_udf2 = $request['customParam_udf2'];
+        }else{
+            $pg_customParam_udf2 = "";
+        }
+        if ( !empty($request['chargetotal'])){
+            $pg_chargetotal= $request['chargetotal'];
+            Log::info("Charge Total 111".$pg_chargetotal);
+
+            
+        }else{
+            $pg_chargetotal = "";
+        }
+        Log::info("Charge Total ".$pg_chargetotal);
+
+        
+
         $this->response = array_merge($request->all(), ["pgPaymentId" => $paymentId, 
                                                         "transactionStatus"=>$transactionStatus,
-                                                        "productinfo" => $request['customParam_productinfo'],
-                                                        "firstname" => $request['customParam_firstname'],
-                                                        "phone" => $request['customParam_phone'],
-                                                        "udf1" => $request['customParam_udf1'],
-                                                        "udf2" => $request['customParam_udf2'],
-                                                        "amount" => $request['chargetotal']]);
+                                                        "productinfo" => $pg_customParam_productinfo,
+                                                        "firstname" => $pg_customParam_firstname,
+                                                        "phone" => $pg_customParam_phone,
+                                                        "udf1" => $pg_customParam_udf1,
+                                                        "udf2" => $pg_customParam_udf2,
+                                                        "amount" => $pg_chargetotal]);
 
                                       
                                                        
@@ -100,6 +173,21 @@ class IcicipgGateway implements PaymentGatewayInterface {
         // if($response_hash!=$response['hash']){
         //     return 'Hash Mismatch Error';
         // }
+
+        
+
+        $commonStatus			=	$this->response['transactionStatus'];
+        $transactionPaymentId   =	$this->response['pgPaymentId'];
+        
+
+       
+        $bookingId = $this->paymentGatewayTransLog->getBookingId( $this->response['oid']);
+
+        $this->response = array_merge($this->response,[ "commonStatus" => $commonStatus,
+                                                        "transactionPaymentId" => $transactionPaymentId,
+                                                        "pgBookingId" => $bookingId]); 
+        
+        $this->paymentGatewayTransLog->populateRequestResponse($this->response);
 
         return $this->response;
     }
